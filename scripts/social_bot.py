@@ -26,19 +26,32 @@ FB_PAGE_ID = os.getenv("FB_PAGE_ID")
 FB_PAGE_ACCESS_TOKEN = os.getenv("FB_PAGE_ACCESS_TOKEN")
 
 GOOGLE_LOCATION_ID = os.getenv("GOOGLE_LOCATION_ID")
-GOOGLE_ACCESS_TOKEN = os.getenv("GOOGLE_ACCESS_TOKEN")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_REFRESH_TOKEN = os.getenv("GOOGLE_REFRESH_TOKEN")
 
 TIKTOK_KEYS = {
     'client_key': os.getenv("TIKTOK_CLIENT_KEY"),
     'client_secret': os.getenv("TIKTOK_CLIENT_SECRET")
 }
 
+def get_google_access_token():
+    url = "https://oauth2.googleapis.com/token"
+    data = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "refresh_token": GOOGLE_REFRESH_TOKEN,
+        "grant_type": "refresh_token"
+    }
+    r = requests.post(url, data=data)
+    return r.json().get("access_token")
+
 def post_to_twitter(message):
     print("🐦 Tentative Twitter...")
+    if not all(TWITTER_KEYS.values()):
+        print("⚠️ Clés Twitter manquantes. Passage au suivant.")
+        return
     try:
-        if not all(TWITTER_KEYS.values()):
-            print("⚠️ Clés Twitter manquantes.")
-            return
         client = tweepy.Client(**TWITTER_KEYS)
         client.create_tweet(text=message)
         print("✅ Twitter OK")
@@ -56,8 +69,9 @@ def post_to_facebook(message):
 
 def post_to_google(message):
     print("🏢 Tentative Google Business...")
-    url = f"https://mybusiness.googleapis.com/v1/{GOOGLE_LOCATION_ID}/localPosts"
-    headers = {"Authorization": f"Bearer {GOOGLE_ACCESS_TOKEN}"}
+    token = get_google_access_token()
+    url = f"https://mybusinessbusinessinformation.googleapis.com/v1/{GOOGLE_LOCATION_ID}/localPosts"
+    headers = {"Authorization": f"Bearer {token}"}
     payload = {
         "languageCode": "fr",
         "summary": message,
